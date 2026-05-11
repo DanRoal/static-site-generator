@@ -23,3 +23,25 @@ def text_node_to_html_node(text_node:TextNode):
         
         case TextType.IMAGE:
             return LeafNode("img", "", {"src":f"{text_node.url}", "alt":f"{text_node.text}"})
+        
+def split_nodes_delimiter(old_nodes:list[TextNode], delimiter:str, text_type:TextType):
+    res= []
+    for node in old_nodes:
+        if node.text_type is not TextType.TEXT:
+            res.append(node)
+            continue
+        splited = node.text.split(delimiter)
+        if len(splited)%2 != 1:
+            raise Exception("No closing delimiter found")
+
+        for i, text in enumerate(splited):
+            if text == "":
+                continue
+            if i%2 == 0:
+                res.append(TextNode(text, TextType.TEXT))
+            else:
+                res.append(TextNode(text, text_type))
+    return res
+
+        
+        
