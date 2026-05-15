@@ -1,4 +1,4 @@
-from functions import split_nodes_delimiter, split_nodes_image, split_nodes_links, extract_markdown_images, extract_markdown_links, text_to_textnodes
+from functions import *
 from textnode import TextNode, TextType
 import unittest
 
@@ -107,7 +107,54 @@ class TestTextToTextNodes(unittest.TestCase):
         ]
         self.assertEqual(expected, text_to_textnodes(text))
 
+class MarkdownToBlocks(unittest.TestCase):
+    def test_markdown_to_blocks(self):
+        md = """
+This is **bolded** paragraph
 
+This is another paragraph with _italic_ text and `code` here
+This is the same paragraph on a new line
+
+- This is a list
+- with items
+"""
+        blocks = markdown_to_blocks(md)
+        self.assertEqual(
+            blocks,
+            [
+                "This is **bolded** paragraph",
+                "This is another paragraph with _italic_ text and `code` here\nThis is the same paragraph on a new line",
+                "- This is a list\n- with items",
+            ],
+        )
+
+class TestBlockToBlockType(unittest.TestCase):
+
+    def test_header(self):
+        self.assertEqual(block_to_block_type("# Header 1"), BlockType.HEADING)
+        self.assertEqual(block_to_block_type("### Header 3"), BlockType.HEADING)
+        self.assertEqual(block_to_block_type("###### Header 6"), BlockType.HEADING)
+
+    def test_invalid_header(self):
+        self.assertEqual(block_to_block_type("####### Too many"), BlockType.PARAGRAPH)
+        self.assertEqual(block_to_block_type("#NotHeader"), BlockType.PARAGRAPH)
+
+    def test_code_block(self):
+        code = """```
+print("Hello world")
+```"""     
+        self.assertEqual(block_to_block_type(code), BlockType.CODE)
+
+    def test_quote(self):
+        self.assertEqual(block_to_block_type("> quote"), BlockType.QUOTE)
+        self.assertEqual(block_to_block_type(">quote"), BlockType.QUOTE)
+
+    def test_unordered(self):
+        self.assertEqual(block_to_block_type("- Element"), BlockType.UNORDERED_LIST)
+
+    def test_ordered(self):
+        self.assertEqual(block_to_block_type("1. first"), BlockType.ORDERED_LIST)
+        self.assertEqual(block_to_block_type("9. ninth"), BlockType.ORDERED_LIST)
 
         
 

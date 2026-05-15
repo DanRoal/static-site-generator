@@ -1,6 +1,16 @@
 from textnode import TextNode, TextType
 from htmlnode import LeafNode
 import re
+from enum import Enum
+
+
+class BlockType(Enum):
+    PARAGRAPH = ""
+    HEADING = "# "
+    CODE = "```\n"
+    QUOTE = ">"
+    UNORDERED_LIST = "- "
+    ORDERED_LIST = "1. "
 
 def text_node_to_html_node(text_node:TextNode):
     if text_node.text_type not in TextType:
@@ -106,3 +116,51 @@ def text_to_textnodes(text:str):
     res = split_nodes_links(res)
     return res
 
+def markdown_to_blocks(markdown:str):
+    blocks = markdown.split("\n\n")
+    filtered = []
+    for block in blocks:
+        if block == "":
+            continue
+        filtered.append(block.strip())
+    return filtered
+
+def block_to_block_type(block: str):
+    match block[0]:
+        case "#":
+            first = block.split(" ", maxsplit=1)[0]
+            if len(first) > 6:
+                return BlockType.PARAGRAPH
+            for char in first:
+                if char != "#":
+                    return BlockType.PARAGRAPH
+            return BlockType.HEADING
+        
+        case "`":
+            first = block.split()[0]
+            last = block.split()[-1]
+            if first != "```" or last != "```":
+                return BlockType.PARAGRAPH
+            return BlockType.CODE
+        
+        case ">":
+            if block == ">":
+                return BlockType.QUOTE
+            elif block[1].isalnum() or block[1] == " ":
+                return BlockType.QUOTE
+            else: return BlockType.PARAGRAPH
+
+        case "-":
+            if block == "-":
+                return BlockType.PARAGRAPH
+            elif block[1] == " ":
+                return BlockType.UNORDERED_LIST
+            else: return BlockType.PARAGRAPH
+
+        case _:
+            if len(block) < 3:
+                return BlockType.PARAGRAPH
+            if block[0].isnumeric() and block[1] == "." and block[2] == " ":
+                return BlockType.ORDERED_LIST
+            else:
+                return BlockType.PARAGRAPH
