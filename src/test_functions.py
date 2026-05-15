@@ -1,4 +1,4 @@
-from functions import split_nodes_delimiter, split_nodes_image, split_nodes_links, extract_markdown_images, extract_markdown_links
+from functions import split_nodes_delimiter, split_nodes_image, split_nodes_links, extract_markdown_images, extract_markdown_links, text_to_textnodes
 from textnode import TextNode, TextType
 import unittest
 
@@ -88,6 +88,26 @@ class TestExtractMarkdown(unittest.TestCase):
             "This is text with an [this is a link](https://i.imgur.com/zjjcJKZ.png)"
         )
         self.assertListEqual([("this is a link", "https://i.imgur.com/zjjcJKZ.png")], matches)
+
+
+class TestTextToTextNodes(unittest.TestCase):
+    def test_ordered(self):
+        text = "This is **text** with an _italic_ word and a `code block` and an ![obi wan image](https://i.imgur.com/fJRm4Vk.jpeg) and a [link](https://boot.dev)"
+        expected = [
+            TextNode("This is ", TextType.TEXT),
+            TextNode("text", TextType.BOLD),
+            TextNode(" with an ", TextType.TEXT),
+            TextNode("italic", TextType.ITALIC),
+            TextNode(" word and a ", TextType.TEXT),
+            TextNode("code block", TextType.CODE),
+            TextNode(" and an ", TextType.TEXT),
+            TextNode("obi wan image", TextType.IMAGE, "https://i.imgur.com/fJRm4Vk.jpeg"),
+            TextNode(" and a ", TextType.TEXT),
+            TextNode("link", TextType.LINK, "https://boot.dev"),
+        ]
+        self.assertEqual(expected, text_to_textnodes(text))
+
+
 
         
 

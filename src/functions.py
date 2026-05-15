@@ -88,11 +88,21 @@ def split_nodes_links(old_nodes:list[TextNode]):
                 res.append(TextNode(remain, TextType.TEXT))
     return res
 
-def extract_markdown_images(text):
+def extract_markdown_images(text:str):
     images = re.findall(r"!\[(.*?)\]\((.*?)\)", text)
     return images
 
-def extract_markdown_links(text):
+def extract_markdown_links(text:str):
     links = re.findall(r"(?<!!)\[(.*?)\]\((.*?)\)",text)
     return links
+
+def text_to_textnodes(text:str):
+    delimiters = {"**":TextType.BOLD,"`":TextType.CODE,"_":TextType.ITALIC}
+    initial = TextNode(text, text_type=TextType.TEXT)
+    res = [initial]
+    for delimiter in delimiters:
+        res = split_nodes_delimiter(res, delimiter, delimiters[delimiter])
+    res = split_nodes_image(res)
+    res = split_nodes_links(res)
+    return res
 
