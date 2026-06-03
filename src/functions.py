@@ -1,5 +1,5 @@
 from textnode import TextNode, TextType
-from htmlnode import LeafNode
+from htmlnode import LeafNode, HTMLNode, ParentNode
 import re
 from enum import Enum
 
@@ -12,7 +12,7 @@ class BlockType(Enum):
     UNORDERED_LIST = "- "
     ORDERED_LIST = "1. "
 
-def text_node_to_html_node(text_node:TextNode):
+def text_node_to_html_node(text_node:TextNode) -> LeafNode:
     if text_node.text_type not in TextType:
         with Exception as e:
             raise f"Somehow {text_node} is not a valid TextType: {e}"
@@ -35,7 +35,7 @@ def text_node_to_html_node(text_node:TextNode):
         case TextType.IMAGE:
             return LeafNode("img", "", {"src":f"{text_node.url}", "alt":f"{text_node.text}"})
         
-def split_nodes_delimiter(old_nodes:list[TextNode], delimiter:str, text_type:TextType):
+def split_nodes_delimiter(old_nodes:list[TextNode], delimiter:str, text_type:TextType)-> list[TextNode]:
     res= []
     for node in old_nodes:
         if node.text_type is not TextType.TEXT:
@@ -54,7 +54,7 @@ def split_nodes_delimiter(old_nodes:list[TextNode], delimiter:str, text_type:Tex
                 res.append(TextNode(text, text_type))
     return res
 
-def split_nodes_image(old_nodes:list[TextNode]):
+def split_nodes_image(old_nodes:list[TextNode])-> list[TextNode]:
     res= []
     for node in old_nodes:
         if node.text_type is not TextType.TEXT:
@@ -63,7 +63,7 @@ def split_nodes_image(old_nodes:list[TextNode]):
         images = extract_markdown_images(node.text)
         splited = [node.text]
         for alt, img_link in images:
-            splited.extend(splited.pop(-1).split(f"![{alt}]({img_link})",1))
+            splited.extend(splited.pop(-1).split(f"![{alt}]({img_link})",maxsplit=1))
         index = 0
         while index < len(images):
             if splited[0] != "":
@@ -76,7 +76,7 @@ def split_nodes_image(old_nodes:list[TextNode]):
                 res.append(TextNode(remain, TextType.TEXT))
     return res
 
-def split_nodes_links(old_nodes:list[TextNode]):
+def split_nodes_links(old_nodes:list[TextNode])-> list[TextNode]:
     res= []
     for node in old_nodes:
         if node.text_type is not TextType.TEXT:
@@ -85,7 +85,7 @@ def split_nodes_links(old_nodes:list[TextNode]):
         links = extract_markdown_links(node.text)
         splited = [node.text]
         for alt, link in links:
-            splited.extend(splited.pop(-1).split(f"[{alt}]({link})",1))
+            splited.extend(splited.pop(-1).split(f"[{alt}]({link})",maxsplit=1))
         index = 0
         while index < len(links):
             if splited[0] != "":
@@ -98,17 +98,18 @@ def split_nodes_links(old_nodes:list[TextNode]):
                 res.append(TextNode(remain, TextType.TEXT))
     return res
 
-def extract_markdown_images(text:str):
+def extract_markdown_images(text:str)->list:
     images = re.findall(r"!\[(.*?)\]\((.*?)\)", text)
     return images
 
-def extract_markdown_links(text:str):
+def extract_markdown_links(text:str)->list:
     links = re.findall(r"(?<!!)\[(.*?)\]\((.*?)\)",text)
     return links
 
-def text_to_textnodes(text:str):
+def text_to_textnodes(text:str)-> list[TextNode]:
+    cleaned_text = text.replace("\n", " ")
     delimiters = {"**":TextType.BOLD,"`":TextType.CODE,"_":TextType.ITALIC}
-    initial = TextNode(text, text_type=TextType.TEXT)
+    initial = TextNode(cleaned_text, text_type=TextType.TEXT)
     res = [initial]
     for delimiter in delimiters:
         res = split_nodes_delimiter(res, delimiter, delimiters[delimiter])
@@ -116,7 +117,7 @@ def text_to_textnodes(text:str):
     res = split_nodes_links(res)
     return res
 
-def markdown_to_blocks(markdown:str):
+def markdown_to_blocks(markdown:str) -> list[str]:
     blocks = markdown.split("\n\n")
     filtered = []
     for block in blocks:
@@ -125,7 +126,7 @@ def markdown_to_blocks(markdown:str):
         filtered.append(block.strip())
     return filtered
 
-def block_to_block_type(block: str):
+def block_to_block_type(block: str) -> BlockType:
     match block[0]:
         case "#":
             first = block.split(" ", maxsplit=1)[0]
@@ -155,7 +156,8 @@ def block_to_block_type(block: str):
                 return BlockType.PARAGRAPH
             elif block[1] == " ":
                 return BlockType.UNORDERED_LIST
-            else: return BlockType.PARAGRAPH
+            else: 
+                return BlockType.PARAGRAPH
 
         case _:
             if len(block) < 3:
@@ -164,3 +166,63 @@ def block_to_block_type(block: str):
                 return BlockType.ORDERED_LIST
             else:
                 return BlockType.PARAGRAPH
+
+def text_to_children(text:str, blocktype:BlockType)-> list:
+    children = []
+    if blocktype == BlockType.UNORDERED_LIST or blocktype == BlockType.ORDERED_LIST:
+        children = text_to_list_children_nodes(text)
+    else:
+        children = parsing_text_to_children(text)
+    return children
+
+def parsing_text_to_children(text:str)-> list[LeafNode]:
+    children = text_to_textnodes(text)
+    children = map(text_node_to_html_node, children)
+    return children
+
+def heading_importance(heading:str):
+    first = heading.split(" ", maxsplit=1)[0]
+    return len(first)
+
+def text_to_list_children_nodes(text:str)->list[LeafNode]:
+    lines = text.split("\n")
+    res = []
+    for line in lines:
+        if line == "":
+            continue
+        res.append(ParentNode(tag="li", children=parsing_text_to_children(line)))
+    return res
+
+def determine_block_tag(block:str,blocktype:BlockType)->str:
+    match blocktype:
+        case BlockType.QUOTE:
+            return "blockquote"
+        case BlockType.UNORDERED_LIST:
+            return "ul"
+        case BlockType.ORDERED_LIST:
+            return "ol"
+        case BlockType.CODE:
+            return "pre"
+        case BlockType.HEADING:
+            return f"h{heading_importance(block)}"
+        case BlockType.PARAGRAPH:
+            return "p"
+
+def markdown_to_html_node(markdown: str) -> ParentNode:
+    res = []
+    blocks = markdown_to_blocks(markdown)
+    for block in blocks:
+        block_type = block_to_block_type(block)
+        if block_type == BlockType.CODE:
+            HTMLblock = ParentNode(tag=determine_block_tag(block, block_type),
+                                   children=[LeafNode(tag="code", value=block[4:-3])])
+            res.append(HTMLblock)
+        else:
+            HTMLblock = ParentNode(tag=determine_block_tag(block, block_type),
+                                   children=text_to_children(block, block_type))
+            res.append(HTMLblock)
+    return ParentNode(tag="div", children=res)
+
+
+
+
