@@ -1,6 +1,6 @@
-from textnode import TextNode, TextType
 import os
 import shutil
+from page_generator import generate_page
 
 def cloner(source:str, destiny:str):
     if not os.path.exists(source):
@@ -27,7 +27,12 @@ def cloner(source:str, destiny:str):
 
 
 def main():
+    source = "content/index.md"
+    destity = "public/index.html"
+    template = "template.html"
     cloner(source="static", destiny="public")
+    generate_page(from_path=source, template_path=template, dest_path=destity)
+    
 
 
 main()

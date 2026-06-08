@@ -30,7 +30,7 @@ def text_node_to_html_node(text_node:TextNode) -> LeafNode:
             return LeafNode("code", f"{text_node.text}")
         
         case TextType.LINK:
-            return LeafNode("link", f"{text_node.text}", text_node.url)
+            return LeafNode("a", f"{text_node.text}", {"href": text_node.url})
         
         case TextType.IMAGE:
             return LeafNode("img", "", {"src":f"{text_node.url}", "alt":f"{text_node.text}"})
@@ -171,6 +171,10 @@ def text_to_children(text:str, blocktype:BlockType)-> list:
     children = []
     if blocktype == BlockType.UNORDERED_LIST or blocktype == BlockType.ORDERED_LIST:
         children = text_to_list_children_nodes(text)
+    elif blocktype == BlockType.HEADING:
+        children = parsing_text_to_children(" ".join(text.split()[1:]))
+    elif blocktype == BlockType.QUOTE:
+        children = parsing_text_to_children(" ".join(text.split()[1:]))
     else:
         children = parsing_text_to_children(text)
     return children
@@ -190,7 +194,7 @@ def text_to_list_children_nodes(text:str)->list[LeafNode]:
     for line in lines:
         if line == "":
             continue
-        res.append(ParentNode(tag="li", children=parsing_text_to_children(line)))
+        res.append(ParentNode(tag="li", children=parsing_text_to_children(" ".join(line.split()[1:]))))
     return res
 
 def determine_block_tag(block:str,blocktype:BlockType)->str:
