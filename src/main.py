@@ -29,13 +29,13 @@ def cloner(source:str, destiny:str):
 
 def main():
     try:
-        basepath = sys.argv[0]
+        basepath = sys.argv[1]
     except:
         basepath = "/"
     source = "content"
-    destity = "public"
+    destity = "docs"
     template = "template.html"
-    cloner(source="static", destiny="public")
+    cloner("static", destity)
     generate_pages_recursive(dir_path_content= source, template_path=template, dest_dir_path= destity, basepath=basepath)
     
 

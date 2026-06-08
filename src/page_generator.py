@@ -47,6 +47,6 @@ def generate_pages_recursive(dir_path_content:str, template_path:str, dest_dir_p
             generate_page(new_source, template_path, new_destiny, basepath)
             print(f"Generated html from {new_source} and located in {new_destiny}")
         else:
-            generate_pages_recursive(new_source, template_path, new_destiny)
+            generate_pages_recursive(new_source, template_path, new_destiny, basepath)
         
     
