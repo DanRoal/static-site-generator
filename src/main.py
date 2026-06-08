@@ -1,6 +1,7 @@
 import os
 import shutil
-from page_generator import generate_page
+from page_generator import generate_pages_recursive
+import sys
 
 def cloner(source:str, destiny:str):
     if not os.path.exists(source):
@@ -27,11 +28,15 @@ def cloner(source:str, destiny:str):
 
 
 def main():
-    source = "content/index.md"
-    destity = "public/index.html"
+    try:
+        basepath = sys.argv[0]
+    except:
+        basepath = "/"
+    source = "content"
+    destity = "public"
     template = "template.html"
     cloner(source="static", destiny="public")
-    generate_page(from_path=source, template_path=template, dest_path=destity)
+    generate_pages_recursive(dir_path_content= source, template_path=template, dest_dir_path= destity, basepath=basepath)
     
 
 
